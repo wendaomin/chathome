@@ -2,53 +2,89 @@
 <html>
   <head>
     <title>Socket.IO chat</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
-    </style>
+    <link rel="stylesheet" href="/index.css">
     <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
   </head>
   <body>
     <ul id="messages"></ul>
     <form action="">
+        <input type="file" id="uploadfile" multiple='multiple'>
       <input id="m" autocomplete="off" /><button>发送</button>
     </form>
   </body>
-
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    var userObj = null;
     var name   = prompt("请输入你的昵称：");
-    var socket = io()
+    //默认连接本机服务器
+    var socket = io('localhost:3000')
     
     //发送昵称给后端，并更改网页title
     socket.emit("join", name)
     document.title = name + "的群聊"
 
     socket.on("join", function (user) {
-      addLine(user + " 加入了群聊")
+      socket.name = user
+      addLine(user + '加入了群聊')
     })
 
     //接收到服务器发来的message事件
     socket.on("message", function(msg) {
       addLine(msg)
     })
-
+    socket.on('disconnect', function(msg){
+      addLine(msg + '退出了群聊');
+    })
+    socket.on('base64 file', function(msg){
+      addLine(msg)
+    })
     //当发送按钮被点击时
     $('form').submit(function () {
       var msg = $("#m").val() //获取用户输入的信息
-      socket.emit("message", msg) //将消息发送给服务器
+      userObj = {
+        name: name,
+        msg: msg
+      }
+      socket.emit("message", userObj) //将消息发送给服务器
       $("#m").val("") //置空消息框
       return false //阻止form提交
     })
+    $('#uploadfile').bind('change', function(e){
+      var data = e.originalEvent.target.files[0];
+      var data_URL = readThenSendFile(data);
 
+    });
     function addLine(msg) {
-      $('#messages').append($('<li>').text(msg));
+      if(msg.msg){
+        $('#messages').append($('<li>').text(msg.name +': '+ msg.msg));
+      }else if(msg.file && msg.type){
+          $('#messages').append($('<li>').text(msg.username+':'+'图片展示').append($('<iframe>').attr('src', msg.file)));
+      }else if(msg.file && !msg.type){
+        console.log(msg.type);
+        console.log(msg);
+        
+        $('#messages').append($('<li>').text(msg.username+':'+ msg.fileName + '文件上传中').append($('<iframe>').attr({src: msg.file, hidden:'hidden'})));
+      }else{
+        $('#messages').append($('<li>').text(msg));
+      }
+    }
+    function readThenSendFile(data){
+      var reader = new FileReader();
+      reader.onload = function(evt){
+          var rg = /.jpg$/;
+          var msg ={};
+          if(rg.test(data.name)){
+            console.log('123');
+            msg.type = rg.test(data.name);
+          }else{
+            msg.type = false;
+          }
+          msg.username = socket.name;
+          msg.file = evt.target.result;
+          msg.fileName = data.name; 
+          socket.emit('base64 file', msg);
+      };
+      return reader.readAsDataURL(data);
     }
   </script>
 </html>

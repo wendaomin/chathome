@@ -1,0 +1,25 @@
+{
+  "name": "chatage",
+  "version": "1.0.0",
+  "description": "chat home",
+  "main": "server.js",
+  "scripts": {
+    "test": "make test",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/i1mT/node-chat.git"
+  },
+  "author": "wdm",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/i1mT/node-chat/issues"
+  },
+  "homepage": "https://github.com/i1mT/node-chat#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "path": "^0.12.7"
+  }
+}
